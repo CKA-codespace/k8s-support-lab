@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: broken-app
+  labels:
+    app: broken-app
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+  selector:
+    app: broken-app
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: broken-app
+  labels:
+    app: broken-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: broken-app
+  template:
+    metadata:
+      labels:
+        app: broken-app
+    spec:
+      containers:
+      - name: web
+        # This image tag doesn't exist and will cause ImagePullBackOff/CrashLoopBackOff
+        image: nginx:nonexistent-tag-v999
+        ports:
+        - containerPort: 80
+        # Add a simple health check page
+        command: ["/bin/sh"]
+        args:
+        - -c
+        - |
+          echo '<!DOCTYPE html>
+          <html>
+          <head><title>Fixed App</title></head>
+          <body>
+              <h1>🎉 Congratulations!</h1>
+              <p>You successfully fixed the CrashLoopBackOff issue!</p>
+              <p>The container is now running with image: nginx:latest</p>
+              <p><strong>What was wrong?</strong> The original image tag <code>nginx:nonexistent-tag-v999</code> does not exist in the Docker registry.</p>
+          </body>
+          </html>' > /usr/share/nginx/html/index.html && nginx -g 'daemon off;'
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10

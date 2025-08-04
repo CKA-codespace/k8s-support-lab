@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp
+  labels:
+    app: webapp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: webapp
+  template:
+    metadata:
+      labels:
+        app: webapp
+        tier: frontend
+    spec:
+      containers:
+      - name: web
+        image: nginx:1.25-alpine
+        ports:
+        - containerPort: 80
+        # Create a custom page that shows DNS resolution is working
+        command: ["/bin/sh"]
+        args:
+        - -c
+        - |
+          cat > /usr/share/nginx/html/index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>DNS Lab - Service Discovery Working!</title>
+              <style>
+                  body { font-family: Arial, sans-serif; margin: 40px; background: #e8f5e8; }
+                  .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                  .success { background: #d4edda; color: #155724; padding: 15px; border-radius: 4px; border: 1px solid #c3e6cb; }
+                  .info { background: #cce5ff; color: #004085; padding: 10px; border-radius: 4px; margin: 10px 0; }
+                  code { background: #f8f9fa; padding: 2px 4px; border-radius: 3px; font-family: monospace; }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <h1>🎉 DNS Resolution Fixed!</h1>
+                  <div class="success">
+                      <strong>Success!</strong> You've successfully fixed the Service selector issue.
+                  </div>
+                  
+                  <h2>What was broken?</h2>
+                  <p>The Service selector didn't match the pod labels:</p>
+                  <div class="info">
+                      <strong>Pod labels:</strong> <code>app=webapp, tier=frontend</code><br>
+                      <strong>Original broken selector:</strong> <code>app=wrong-app</code><br>
+                      <strong>Fixed selector:</strong> <code>app=webapp</code>
+                  </div>
+                  
+                  <h2>How Kubernetes Service Discovery Works</h2>
+                  <ul>
+                      <li>Services use <strong>selectors</strong> to find matching pods</li>
+                      <li>Only pods with matching labels become service <strong>endpoints</strong></li>
+                      <li>DNS resolves service names to endpoint IPs</li>
+                      <li>kube-proxy handles load balancing to healthy endpoints</li>
+                  </ul>
+                  
+                  <h2>Debug Commands You Used</h2>
+                  <ul>
+                      <li><code>kubectl get endpoints webapp-service</code> - Check if service has endpoints</li>
+                      <li><code>kubectl get pods --show-labels</code> - See actual pod labels</li>
+                      <li><code>kubectl describe svc webapp-service</code> - See service selector</li>
+                  </ul>
+                  
+                  <p><strong>Pod IP:</strong> <span id="pod-ip">Loading...</span></p>
+                  <p><strong>Service accessible via:</strong> <code>webapp-service.default.svc.cluster.local</code></p>
+              </div>
+              
+              <script>
+                  // Show pod IP (simulated since we can't easily get real IP in static HTML)
+                  document.getElementById('pod-ip').textContent = '10.244.x.x (varies by cluster)';
+              </script>
+          </body>
+          </html>
+          EOF
+          
+          nginx -g 'daemon off;'
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10

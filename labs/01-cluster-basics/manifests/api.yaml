@@ -1,0 +1,115 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+  labels:
+    app: api
+spec:
+  ports:
+  - port: 3000
+    targetPort: 3000
+  selector:
+    app: api
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+      - name: api
+        image: node:18-alpine
+        ports:
+        - containerPort: 3000
+        env:
+        - name: DB_HOST
+          value: postgres
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          value: supportlab
+        - name: DB_USER
+          value: labuser
+        - name: DB_PASS
+          value: labpass123
+        command: ["/bin/sh"]
+        args:
+        - -c
+        - |
+          cat > server.js << 'EOF'
+          const http = require('http');
+          const { Client } = require('pg');
+          
+          const client = new Client({
+            host: process.env.DB_HOST,
+            port: process.env.DB_PORT,
+            database: process.env.DB_NAME,
+            user: process.env.DB_USER,
+            password: process.env.DB_PASS,
+          });
+          
+          const server = http.createServer(async (req, res) => {
+            res.setHeader('Content-Type', 'application/json');
+            
+            if (req.url === '/api/health') {
+              try {
+                await client.query('SELECT NOW()');
+                res.writeHead(200);
+                res.end(JSON.stringify({ status: 'healthy', timestamp: new Date().toISOString() }));
+              } catch (error) {
+                res.writeHead(503);
+                res.end(JSON.stringify({ status: 'unhealthy', error: error.message }));
+              }
+            } else if (req.url === '/api/info') {
+              res.writeHead(200);
+              res.end(JSON.stringify({ 
+                service: 'support-lab-api',
+                version: '1.0.0',
+                database: process.env.DB_HOST 
+              }));
+            } else {
+              res.writeHead(404);
+              res.end(JSON.stringify({ error: 'Not found' }));
+            }
+          });
+          
+          async function start() {
+            try {
+              await client.connect();
+              console.log('Connected to database');
+              server.listen(3000, '0.0.0.0', () => {
+                console.log('API server running on port 3000');
+              });
+            } catch (error) {
+              console.error('Failed to start server:', error);
+              process.exit(1);
+            }
+          }
+          
+          start();
+          EOF
+          
+          npm init -y
+          npm install pg
+          node server.js
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10

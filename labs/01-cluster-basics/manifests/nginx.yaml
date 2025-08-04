@@ -1,0 +1,163 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config
+data:
+  nginx.conf: |
+    server {
+        listen 80;
+        server_name localhost;
+
+        location / {
+            root /usr/share/nginx/html;
+            index index.html;
+        }
+
+        location /api/ {
+            proxy_pass http://api:3000/;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        }
+    }
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Support Lab - 3-Tier App</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+            .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+            .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
+            .healthy { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+            .loading { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+            .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+            button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px; }
+            button:hover { background: #0056b3; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🚀 Kubernetes Support Lab</h1>
+            <h2>3-Tier Application Demo</h2>
+            
+            <p>This application demonstrates a typical 3-tier architecture:</p>
+            <ul>
+                <li><strong>Frontend:</strong> Nginx (you're viewing this now)</li>
+                <li><strong>API:</strong> Node.js service</li>
+                <li><strong>Database:</strong> PostgreSQL</li>
+            </ul>
+            
+            <h3>API Health Check</h3>
+            <div id="health-status" class="status loading">Checking API health...</div>
+            <button onclick="checkHealth()">Refresh Health Check</button>
+            
+            <h3>API Info</h3>
+            <div id="info-status" class="status loading">Loading API info...</div>
+            <button onclick="checkInfo()">Refresh API Info</button>
+            
+            <script>
+                function checkHealth() {
+                    document.getElementById('health-status').innerHTML = 'Checking...';
+                    document.getElementById('health-status').className = 'status loading';
+                    
+                    fetch('/api/health')
+                        .then(response => response.json())
+                        .then(data => {
+                            const statusDiv = document.getElementById('health-status');
+                            if (data.status === 'healthy') {
+                                statusDiv.innerHTML = '✅ API is healthy! Database connection working. Last check: ' + data.timestamp;
+                                statusDiv.className = 'status healthy';
+                            } else {
+                                statusDiv.innerHTML = '❌ API is unhealthy: ' + data.error;
+                                statusDiv.className = 'status error';
+                            }
+                        })
+                        .catch(error => {
+                            document.getElementById('health-status').innerHTML = '❌ Failed to reach API: ' + error.message;
+                            document.getElementById('health-status').className = 'status error';
+                        });
+                }
+                
+                function checkInfo() {
+                    document.getElementById('info-status').innerHTML = 'Loading...';
+                    document.getElementById('info-status').className = 'status loading';
+                    
+                    fetch('/api/info')
+                        .then(response => response.json())
+                        .then(data => {
+                            document.getElementById('info-status').innerHTML = 
+                                'ℹ️ Service: ' + data.service + '<br>' +
+                                '📋 Version: ' + data.version + '<br>' +
+                                '🗄️ Database Host: ' + data.database;
+                            document.getElementById('info-status').className = 'status healthy';
+                        })
+                        .catch(error => {
+                            document.getElementById('info-status').innerHTML = '❌ Failed to get API info: ' + error.message;
+                            document.getElementById('info-status').className = 'status error';
+                        });
+                }
+                
+                // Auto-check on page load
+                checkHealth();
+                checkInfo();
+            </script>
+        </div>
+    </body>
+    </html>
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  labels:
+    app: nginx
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+  selector:
+    app: nginx
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.25-alpine
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d/default.conf
+          subPath: nginx.conf
+        - name: nginx-config
+          mountPath: /usr/share/nginx/html/index.html
+          subPath: index.html
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: nginx-config

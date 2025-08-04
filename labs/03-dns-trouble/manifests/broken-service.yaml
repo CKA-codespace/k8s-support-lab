@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: webapp-service
+  labels:
+    app: webapp-service
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+  # This selector is intentionally wrong - it doesn't match the pod labels
+  # The pods have labels: app=webapp, tier=frontend
+  # But this service is looking for: app=wrong-app
+  # This will cause the service to have no endpoints
+  selector:
+    app: wrong-app
+  type: ClusterIP
