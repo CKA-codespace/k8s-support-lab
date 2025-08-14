@@ -1,5 +1,7 @@
 # Kubernetes Support Lab
 
+![Kubernetes Support Lab](labs.png)
+
 This repository contains hands-on labs designed to teach technical support engineers Kubernetes fundamentals and troubleshooting skills.
 
 ## Prerequisites
