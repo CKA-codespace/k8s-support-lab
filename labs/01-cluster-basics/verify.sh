@@ -42,47 +42,47 @@ if [ "$CRASHLOOP_COUNT" -gt 0 ]; then
 fi
 echo "✅ No CrashLoopBackOff detected"
 
-# Test services via port-forward
+# Test services via NodePort
 echo "3. Testing service connectivity..."
 
-# Start port-forward in background
-kubectl port-forward svc/nginx 8080:80 >/dev/null 2>&1 &
-PF_PID=$!
-sleep 3
+# Get cluster IP
+CLUSTER_IP=$(docker inspect support-lab-control-plane --format '{{ .NetworkSettings.Networks.kind.IPAddress }}' 2>/dev/null)
+if [ -z "$CLUSTER_IP" ]; then
+    echo "❌ FAIL: Could not get kind cluster IP"
+    echo "Debug: Make sure kind cluster 'support-lab' is running"
+    exit 1
+fi
+
+TEST_URL="http://$CLUSTER_IP:30080"
 
 # Test frontend
-FRONTEND_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/ 2>/dev/null)
+FRONTEND_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "$TEST_URL/" 2>/dev/null)
 if [ "$FRONTEND_RESPONSE" != "200" ]; then
     echo "❌ FAIL: Frontend not reachable (HTTP $FRONTEND_RESPONSE)"
-    kill $PF_PID 2>/dev/null
-    echo "Debug: kubectl port-forward svc/nginx 8080:80"
-    echo "Debug: curl -v http://localhost:8080/"
+    echo "Debug: curl -v $TEST_URL/"
+    echo "Debug: kubectl get svc nginx"
     exit 1
 fi
 echo "✅ Frontend accessible (HTTP 200)"
 
 # Test API health endpoint
-API_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/health 2>/dev/null)
+API_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "$TEST_URL/api/health" 2>/dev/null)
 if [ "$API_RESPONSE" != "200" ]; then
     echo "❌ FAIL: API health endpoint not reachable (HTTP $API_RESPONSE)"
-    kill $PF_PID 2>/dev/null
-    echo "Debug: kubectl port-forward svc/api 3000:3000"
-    echo "Debug: curl -v http://localhost:3000/api/health"
+    echo "Debug: curl -v $TEST_URL/api/health"
+    echo "Debug: kubectl get svc api"
     exit 1
 fi
 echo "✅ API health endpoint accessible (HTTP 200)"
 
 # Test API info endpoint
-INFO_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/info 2>/dev/null)
+INFO_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "$TEST_URL/api/info" 2>/dev/null)
 if [ "$INFO_RESPONSE" != "200" ]; then
     echo "❌ FAIL: API info endpoint not reachable (HTTP $INFO_RESPONSE)"
-    kill $PF_PID 2>/dev/null
+    echo "Debug: curl -v $TEST_URL/api/info"
     exit 1
 fi
 echo "✅ API info endpoint accessible (HTTP 200)"
-
-# Cleanup port-forward
-kill $PF_PID 2>/dev/null
 
 echo
 echo "🎉 SUCCESS: All verification checks passed!"
@@ -93,7 +93,7 @@ echo "  - Nginx frontend can proxy to API"
 echo "  - All services are accessible via port-forward"
 echo
 echo "Try accessing the application:"
-echo "  kubectl port-forward svc/nginx 8080:80"
-echo "  Open http://localhost:8080 in your browser"
+echo "  ../../scripts/open-lab.sh 01"
+echo "  Or manually: curl $TEST_URL"
 
 exit 0

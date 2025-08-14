@@ -1,7 +1,21 @@
 # Lab 01: Cluster Basics - 3-Tier Application
 
 ## Objective
-Build a complete 3-tier application stack: Nginx frontend → Node.js API → Postgres database
+Build a complete 3-tier application stack: Nginx frontend → Python API → Postgres database
+
+## Prerequisites Check
+Before starting, verify your environment:
+```bash
+# 1. Verify Kubernetes cluster is running
+kubectl cluster-info
+
+# 2. Check you can create resources
+kubectl auth can-i create pods
+
+# 3. Verify you're in the right directory
+pwd  # Should end with: /labs/01-cluster-basics
+```
+If any of these fail, review the main README setup instructions.
 
 ## Rookie Instructions (Step-by-Step)
 
@@ -22,16 +36,17 @@ Build a complete 3-tier application stack: Nginx frontend → Node.js API → Po
 3. Verify: `kubectl get pods -l app=nginx`
 
 ### Step 4: Test the Complete Stack (5 minutes)
-1. Port-forward to Nginx: `kubectl port-forward svc/nginx 8080:80 &`
-2. Test the frontend: `curl http://localhost:8080`
-3. Test the API endpoint: `curl http://localhost:8080/api/health`
-4. Run the verification script: `./verify.sh`
+1. Open the application in your browser: `../../scripts/open-lab.sh 01` (opens http://localhost:8080)
+2. Click the "Refresh Health Check" and "Refresh API Info" buttons to test the full stack
+3. Run the verification script: `./verify.sh`
 
 ## Pro Instructions
 - Deploy postgres.yaml (StatefulSet with persistent storage)
-- Deploy api.yaml (connects to postgres service via env vars)
+- Deploy api.yaml (Python HTTP server connecting to postgres service)
 - Deploy nginx.yaml (proxies /api/* to API service)
 - Verify 3-tier connectivity via port-forward and curl tests
+
+**Note:** If you encounter issues with any deployment, use `kubectl logs <pod-name>` and `kubectl describe pod <pod-name>` to debug.
 
 ## Success Criteria
 - All pods in Running state
@@ -39,10 +54,22 @@ Build a complete 3-tier application stack: Nginx frontend → Node.js API → Po
 - API responds to /api/health with 200 status
 - Database connection working (API can query Postgres)
 
-## Common Issues
-- **Pod pending**: Check if PVC can be provisioned
-- **API connection failed**: Verify postgres service name and port
-- **Nginx 502**: Check if API service is reachable from nginx pod
+## Common Issues & Debugging
+- **Pod pending**: Check if PVC can be provisioned (`kubectl get pvc`)
+- **CrashLoopBackOff**: Check pod logs (`kubectl logs <pod-name>`) for startup errors
+- **API connection failed**: Verify service names and ports (`kubectl get svc`)
+- **Nginx 502 errors**: Check if API service is reachable (`kubectl get endpoints api`)
+- **Application not accessible**: Check if cluster is running (`kubectl cluster-info`)
+
+### Useful Debugging Commands
+```bash
+kubectl get all                    # Overview of all resources
+kubectl get pods -o wide          # Pod details with node placement
+kubectl describe pod <pod-name>    # Detailed pod information and events  
+kubectl logs <pod-name>           # Container logs
+kubectl get svc,endpoints         # Services and their endpoints
+../../scripts/open-lab.sh 01      # Easy browser access
+```
 
 ## Time Estimate
 - Rookie: 15-20 minutes

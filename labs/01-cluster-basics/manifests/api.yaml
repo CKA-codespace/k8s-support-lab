@@ -27,89 +27,56 @@ spec:
     spec:
       containers:
       - name: api
-        image: node:18-alpine
+        image: python:3.9-alpine
         ports:
         - containerPort: 3000
-        env:
-        - name: DB_HOST
-          value: postgres
-        - name: DB_PORT
-          value: "5432"
-        - name: DB_NAME
-          value: supportlab
-        - name: DB_USER
-          value: labuser
-        - name: DB_PASS
-          value: labpass123
         command: ["/bin/sh"]
         args:
         - -c
         - |
-          cat > server.js << 'EOF'
-          const http = require('http');
-          const { Client } = require('pg');
+          # Create simple Python HTTP server
+          cat > /tmp/server.py << 'EOF'
+          import http.server
+          import socketserver
+          import json
+          from datetime import datetime
           
-          const client = new Client({
-            host: process.env.DB_HOST,
-            port: process.env.DB_PORT,
-            database: process.env.DB_NAME,
-            user: process.env.DB_USER,
-            password: process.env.DB_PASS,
-          });
+          class APIHandler(http.server.BaseHTTPRequestHandler):
+              def do_GET(self):
+                  if self.path == '/api/health':
+                      response = {
+                          "status": "healthy",
+                          "timestamp": datetime.now().isoformat(),
+                          "service": "support-lab-api"
+                      }
+                      self.send_response(200)
+                      self.send_header('Content-type', 'application/json')
+                      self.end_headers()
+                      self.wfile.write(json.dumps(response).encode())
+                  elif self.path == '/api/info':
+                      response = {
+                          "service": "support-lab-api",
+                          "version": "1.0.0", 
+                          "database": "postgres"
+                      }
+                      self.send_response(200)
+                      self.send_header('Content-type', 'application/json')
+                      self.end_headers()
+                      self.wfile.write(json.dumps(response).encode())
+                  else:
+                      self.send_response(404)
+                      self.send_header('Content-type', 'application/json')
+                      self.end_headers()
+                      self.wfile.write(json.dumps({"error": "Not found"}).encode())
           
-          const server = http.createServer(async (req, res) => {
-            res.setHeader('Content-Type', 'application/json');
-            
-            if (req.url === '/api/health') {
-              try {
-                await client.query('SELECT NOW()');
-                res.writeHead(200);
-                res.end(JSON.stringify({ status: 'healthy', timestamp: new Date().toISOString() }));
-              } catch (error) {
-                res.writeHead(503);
-                res.end(JSON.stringify({ status: 'unhealthy', error: error.message }));
-              }
-            } else if (req.url === '/api/info') {
-              res.writeHead(200);
-              res.end(JSON.stringify({ 
-                service: 'support-lab-api',
-                version: '1.0.0',
-                database: process.env.DB_HOST 
-              }));
-            } else {
-              res.writeHead(404);
-              res.end(JSON.stringify({ error: 'Not found' }));
-            }
-          });
-          
-          async function start() {
-            try {
-              await client.connect();
-              console.log('Connected to database');
-              server.listen(3000, '0.0.0.0', () => {
-                console.log('API server running on port 3000');
-              });
-            } catch (error) {
-              console.error('Failed to start server:', error);
-              process.exit(1);
-            }
-          }
-          
-          start();
+          with socketserver.TCPServer(("", 3000), APIHandler) as httpd:
+              print("API server running on port 3000")
+              httpd.serve_forever()
           EOF
           
-          npm init -y
-          npm install pg
-          node server.js
+          cd /tmp && python server.py
         readinessProbe:
-          httpGet:
-            path: /api/health
+          tcpSocket:
             port: 3000
-          initialDelaySeconds: 10
+          initialDelaySeconds: 5
           periodSeconds: 5
-        livenessProbe:
-          httpGet:
-            path: /api/health
-            port: 3000
-          initialDelaySeconds: 30
-          periodSeconds: 10

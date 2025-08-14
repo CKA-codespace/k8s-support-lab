@@ -35,7 +35,8 @@ Debug and fix a pod that's stuck in CrashLoopBackOff state due to a broken image
 1. Apply the corrected manifest: `kubectl apply -f broken-app.yaml`
 2. Watch the pod come up: `kubectl get pods -w`
 3. Wait for the pod to reach Running state
-4. Run the verification script: `./verify.sh`
+4. Test in browser: `../../scripts/open-lab.sh 02` (opens http://localhost:8081)
+5. Run the verification script: `./verify.sh`
 
 ## Pro Instructions
 - Deploy broken-app.yaml and observe CrashLoopBackOff

@@ -53,21 +53,27 @@ echo "✅ Container is ready"
 
 # Test service connectivity
 echo "4. Testing service connectivity..."
-kubectl port-forward svc/broken-app 8081:80 >/dev/null 2>&1 &
+
+# Clean up any existing port-forward
+pkill -f "port-forward.*broken-app" 2>/dev/null || true
+
+# Start port-forward
+kubectl port-forward svc/broken-app 8082:80 >/dev/null 2>&1 &
 PF_PID=$!
 sleep 3
 
-HTTP_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8081/ 2>/dev/null)
+TEST_URL="http://localhost:8082"
+HTTP_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "$TEST_URL" 2>/dev/null)
 if [ "$HTTP_RESPONSE" != "200" ]; then
     echo "❌ FAIL: Service not reachable (HTTP $HTTP_RESPONSE)"
     kill $PF_PID 2>/dev/null
-    echo "Debug: kubectl port-forward svc/broken-app 8081:80"
-    echo "Debug: curl -v http://localhost:8081/"
+    echo "Debug: kubectl port-forward svc/broken-app 8082:80"
+    echo "Debug: kubectl get svc broken-app"
     exit 1
 fi
 
 # Check if we get the success page content
-CONTENT_CHECK=$(curl -s http://localhost:8081/ 2>/dev/null | grep -c "Congratulations")
+CONTENT_CHECK=$(curl -s "$TEST_URL" 2>/dev/null | grep -c "Congratulations")
 if [ "$CONTENT_CHECK" -eq 0 ]; then
     echo "❌ FAIL: App is running but doesn't show the expected success content"
     kill $PF_PID 2>/dev/null
@@ -85,7 +91,7 @@ echo "  - Pod transitioned from CrashLoopBackOff to Running"
 echo "  - Container is healthy and responding to requests"
 echo
 echo "Try accessing the fixed application:"
-echo "  kubectl port-forward svc/broken-app 8081:80"
-echo "  Open http://localhost:8081 in your browser"
+echo "  ../../scripts/open-lab.sh 02"
+echo "  This will open http://localhost:8081 in your browser"
 
 exit 0

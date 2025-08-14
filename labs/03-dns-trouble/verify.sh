@@ -111,7 +111,7 @@ echo
 echo "Key learning: Services use selectors to find pods. The selector must match the pod labels exactly."
 echo
 echo "Try accessing the application:"
-echo "  kubectl port-forward svc/webapp-service 8082:80"
-echo "  Open http://localhost:8082 in your browser"
+echo "  ../../scripts/open-lab.sh 03"
+echo "  This will open http://localhost:8082 in your browser"
 
 exit 0
