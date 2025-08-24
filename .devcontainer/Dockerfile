@@ -9,16 +9,25 @@ RUN apt-get update && apt-get install -y \
     bash-completion \
     ca-certificates \
     iptables \
+    apt-transport-https \
+    ca-certificates \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install kubectl
-RUN curl -LO "https://dl.k8s.io/release/$(curl -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" \
-    && install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl \
-    && rm kubectl
+RUN mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | \
+    gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] \
+    https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /" | \
+    tee /etc/apt/sources.list.d/kubernetes.list
+
+RUN apt-get update && apt-get install -y kubectl \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install k9s
 RUN curl -sS https://webinstall.dev/k9s | bash \
-    && mv ~/.local/bin/k9s /usr/local/bin/
+    && mv /root/.local/opt/k9s-v0.50.9/bin/k9s /usr/local/bin/ \
+    && chmod 755 /usr/local/bin/k9s
 
 # Install k3d
 RUN curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
