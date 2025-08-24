@@ -9,20 +9,16 @@
   "customizations": {
     "vscode": {
       "settings": {
+        "workbench.colorTheme": "GitHub Dark",
         "editor.fontSize": 12,
         "terminal.integrated.defaultProfile.linux": "bash",
-        "terminal.integrated.fontSize": 12,
-        "workbench.colorCustomizations": {
-          "terminal.background": "#1E1E1E",
-          "terminal.foreground": "#CCCCCC",
-          "terminalCursor.background": "#FFFFFF",
-          "terminalCursor.foreground": "#FFFFFF"
-        }
+        "terminal.integrated.fontSize": 12
       },
       "extensions": [
         "ms-azuretools.vscode-docker",
         "ms-kubernetes-tools.vscode-kubernetes-tools",
-        "redhat.vscode-yaml"
+        "redhat.vscode-yaml",
+        "GitHub.github-vscode-theme"
       ]
     }
   },
