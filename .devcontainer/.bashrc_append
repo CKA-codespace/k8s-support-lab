@@ -1,0 +1,6 @@
+export KUBE_EDITOR=vim
+alias reload='source ~/.bashrc'
+alias h='history'
+alias k=kubectl
+complete -o default -F __start_kubectl k
+source <(kubectl completion bash)

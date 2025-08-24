@@ -25,5 +25,6 @@
   "mounts": [
     "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
   ],
-  "postCreateCommand": "kubectl version --client && k9s version && k3d version"
+  "postCreateCommand": "kubectl version --client && k9s version && k3d version",
+  "postStartCommand": "cat .devcontainer/.bashrc_append >> /home/vscode/.bashrc || true"
 }
