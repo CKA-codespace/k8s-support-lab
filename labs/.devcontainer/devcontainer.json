@@ -1,0 +1,25 @@
+{
+  "name": "Kubernetes Dev Container",
+  "dockerFile": "Dockerfile",
+  "context": "..",
+  "remoteUser": "vscode",
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {}
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      },
+      "extensions": [
+        "ms-azuretools.vscode-docker",
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "redhat.vscode-yaml"
+      ]
+    }
+  },
+  "mounts": [
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+  ],
+  "postCreateCommand": "kubectl version --client && k9s version && k3d version"
+}
