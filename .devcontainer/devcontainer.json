@@ -9,7 +9,15 @@
   "customizations": {
     "vscode": {
       "settings": {
-        "terminal.integrated.defaultProfile.linux": "bash"
+        "editor.fontSize": 12,
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.fontSize": 12,
+        "workbench.colorCustomizations": {
+          "terminal.background": "#1E1E1E",
+          "terminal.foreground": "#CCCCCC",
+          "terminalCursor.background": "#FFFFFF",
+          "terminalCursor.foreground": "#FFFFFF"
+        }
       },
       "extensions": [
         "ms-azuretools.vscode-docker",
