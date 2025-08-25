@@ -1,17 +1,6 @@
 # Use a base dev container image with Docker + common tools
 FROM mcr.microsoft.com/devcontainers/base:ubuntu
 
-# Install dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
-    wget \
-    git \
-    bash-completion \
-    ca-certificates \
-    iptables \
-    apt-transport-https \
-    && rm -rf /var/lib/apt/lists/*
-
 # Install Docker CLI
 RUN apt-get update && \
     apt-get install -y \

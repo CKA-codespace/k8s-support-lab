@@ -33,10 +33,6 @@
       ]
     }
   },
-  "build": {
-    "dockerfile": "Dockerfile",
-    "args": { "DOCKER_GID": "${localEnv:DOCKER_GID}" }
-  },
   "postCreateCommand": "kubectl version --client && k9s version && k3d version",
   "postStartCommand": "cat .devcontainer/.bashrc_append >> /home/vscode/.bashrc || true"
 }
