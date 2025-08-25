@@ -6,6 +6,15 @@
   "features": {
       "ghcr.io/devcontainers/features/docker-in-docker:2": {
           "version": "latest"
+      },
+      "ghcr.io/devcontainers-extra/features/kubectl-asdf:2": {
+          "version": "latest"
+      },
+      "ghcr.io/dhoeric/features/k9s:1":{
+          "version": "latest"
+      },
+      "ghcr.io/rio/features/k3d:1":{
+          "version": "latest"
       }
   },
   "customizations": {
