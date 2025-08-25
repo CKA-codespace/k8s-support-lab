@@ -10,10 +10,9 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     iptables \
     apt-transport-https \
-    ca-certificates \
-    curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Install kubectl
 RUN mkdir -p /etc/apt/keyrings && \
     curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | \
     gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg && \
@@ -31,6 +30,19 @@ RUN curl -sS https://webinstall.dev/k9s | bash \
 
 # Install k3d
 RUN curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+
+# Install Docker CLI
+RUN apt-get update && \
+    apt-get install -y \
+    apt-transport-https \
+    gnupg \
+    lsb-release && \
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
+    | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+    apt-get update && \
+    apt-get install -y docker-ce-cli && \
+    rm -rf /var/lib/apt/lists/*
 
 # Set default user
 USER vscode

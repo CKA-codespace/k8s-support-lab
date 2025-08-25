@@ -4,7 +4,9 @@
   "context": "..",
   "remoteUser": "vscode",
   "features": {
-    //"ghcr.io/devcontainers/features/common-utils:2": {}
+      "ghcr.io/devcontainers/features/docker-in-docker:2": {
+          "version": "latest"
+      }
   },
   "customizations": {
     "vscode": {
@@ -22,9 +24,10 @@
       ]
     }
   },
-  "mounts": [
-    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
-  ],
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": { "DOCKER_GID": "${localEnv:DOCKER_GID}" }
+  },
   "postCreateCommand": "kubectl version --client && k9s version && k3d version",
   "postStartCommand": "cat .devcontainer/.bashrc_append >> /home/vscode/.bashrc || true"
 }
