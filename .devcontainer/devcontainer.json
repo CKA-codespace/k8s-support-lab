@@ -1,7 +1,9 @@
 {
   "name": "Kubernetes Dev Container",
-  "dockerFile": "Dockerfile",
-  "context": "..",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
   "remoteUser": "vscode",
   "features": {
       "ghcr.io/devcontainers/features/docker-in-docker:2": {
@@ -33,6 +35,6 @@
       ]
     }
   },
-  "postCreateCommand": "kubectl version --client && k9s version && k3d version",
-  "postStartCommand": "cat .devcontainer/.bashrc_append >> /home/vscode/.bashrc || true"
+  "postCreateCommand": "cat .devcontainer/.bashrc_append >> /home/vscode/.bashrc || true",
+  "postStartCommand": "kubectl version --client && k9s version && k3d version"
 }
